@@ -1,0 +1,63 @@
+entrypoint = "index.js"
+modules = ["python-3.11"]
+hidden = [".config", "package-lock.json"]
+
+[gitHubImport]
+requiredFiles = [".replit", "replit.nix", "package.json", "package-lock.json"]
+
+[nix]
+channel = "stable-25_05"
+packages = ["cacert", "cargo", "chromedriver", "chromium", "geckodriver", "libffi", "libiconv", "libxcrypt", "openssl", "pkg-config", "rustc"]
+
+[deployment]
+run = ["streamlit", "run", "app.py", "--server.port", "5000"]
+deploymentTarget = "autoscale"
+ignorePorts = false
+build = ["pip", "install", "-r", "requirements.txt"]
+
+[agent]
+expertMode = true
+integrations = ["github:1.0.0", "streamlit_database:1.0.0"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Streamlit App"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Health Monitor"
+
+[[workflows.workflow]]
+name = "Streamlit App"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run streamlit_app.py --server.port 5000 --server.address 0.0.0.0"
+waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Health Monitor"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python health_monitor.py"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
