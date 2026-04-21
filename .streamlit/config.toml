@@ -1,17 +1,8 @@
 [server]
 headless = true
-enableCORS = false
-enableXsrfProtection = false
-port = 5000
-address = "0.0.0.0"
-maxUploadSize = 200
-enableWebsocketCompression = true
-cookieSecret = "randomsecretstring"
 
 [browser]
 gatherUsageStats = false
-serverAddress = "127.0.0.1"
-serverPort = 8501
 
 [theme]
 base = "dark"
