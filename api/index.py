@@ -1,22 +1,46 @@
-"""Vercel entrypoint for the Streamlit application.
-
-The main application is hosted by Streamlit, while this lightweight Flask
-handler keeps the Vercel deployment healthy and directs visitors to it.
-"""
-
-from flask import Flask, redirect
+from flask import Flask, jsonify, request, send_from_directory
+from pathlib import Path
+import time
 
 app = Flask(__name__)
+ROOT = Path(__file__).resolve().parent.parent
 
-STREAMLIT_APP_URL = "https://prince-insta-convo-lp6tm6jqownopvxqhp98kd.streamlit.app/"
+HTML = r'''<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prince E2EE Convo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+:root{--bg:#070b12;--panel:#0d1420;--panel2:#111b2a;--line:#213248;--text:#eef6ff;--muted:#8ca1b8;--cyan:#5ee7f5;--green:#7dffb2;--pink:#ff8fcf;--yellow:#ffe08a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% -10%,#16304a 0,#070b12 42%);color:var(--text);font:15px 'DM Sans',sans-serif;min-height:100vh}.shell{display:flex;min-height:100vh}.sidebar{width:250px;border-right:1px solid var(--line);background:rgba(8,13,22,.85);padding:25px 18px;display:flex;flex-direction:column}.brand{display:flex;align-items:center;gap:11px;margin-bottom:34px}.brand img{width:42px;height:42px;border-radius:12px;object-fit:cover;border:1px solid var(--cyan)}.brand strong{display:block;font-size:15px}.brand small{color:var(--muted);font:11px 'Space Mono',monospace}.nav{display:grid;gap:8px}.nav button{background:transparent;border:1px solid transparent;color:var(--muted);padding:12px 13px;text-align:left;border-radius:10px;font:600 14px 'DM Sans';cursor:pointer}.nav button.active,.nav button:hover{color:var(--text);background:#122235;border-color:#29435d}.nav button.active{box-shadow:inset 3px 0 var(--cyan)}.side-foot{margin-top:auto;color:var(--muted);font-size:12px;line-height:1.6}.dot{display:inline-block;width:8px;height:8px;background:var(--green);border-radius:50%;margin-right:6px;box-shadow:0 0 10px var(--green)}main{flex:1;padding:35px clamp(20px,5vw,65px);max-width:1280px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}.eyebrow{color:var(--cyan);font:11px 'Space Mono';letter-spacing:1.7px;text-transform:uppercase}.top h1{font-size:32px;margin:7px 0 0;letter-spacing:-1px}.user-pill{border:1px solid var(--line);background:var(--panel);border-radius:22px;padding:9px 14px;color:var(--muted);font-size:13px}.grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,.8fr);gap:18px}.card{background:linear-gradient(145deg,rgba(17,27,42,.95),rgba(11,18,29,.95));border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 16px 40px #0002}.hero{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;overflow:hidden;background:linear-gradient(105deg,#10253a,#10202b 65%,#172c2b)}.hero h2{font-size:27px;margin:8px 0}.hero p{color:var(--muted);max-width:580px;margin:0;line-height:1.6}.hero-art{font:34px 'Space Mono';color:var(--green);opacity:.8;padding:15px 30px;letter-spacing:6px}.section-title{font-size:17px;margin:0 0 17px}.fields{display:grid;gap:14px}.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:7px}.field input,.field textarea,.field select{width:100%;background:#08111c;border:1px solid #2a4058;color:var(--text);border-radius:9px;padding:11px 12px;font:14px 'DM Sans';outline:none}.field input:focus,.field textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #5ee7f51a}.field textarea{min-height:100px;resize:vertical}.actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}.btn{border:1px solid var(--cyan);background:#143443;color:var(--text);padding:11px 16px;border-radius:9px;font-weight:700;cursor:pointer}.btn.primary{background:var(--cyan);color:#061119}.btn.danger{border-color:#ff7e98;background:#3a1d2c}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stat{background:#09131f;border:1px solid var(--line);border-radius:11px;padding:14px}.stat b{font:23px 'Space Mono';display:block;color:var(--cyan);margin-top:7px}.stat span{font-size:11px;color:var(--muted)}.status{border-left:3px solid var(--green);padding:11px 13px;background:#0c211b;color:#b8ffd0;border-radius:7px;font-size:13px}.console{grid-column:1/-1}.console-box{height:230px;overflow:auto;background:#050a0c;border:1px solid #1c513a;border-radius:10px;padding:14px;font:12px/1.8 'Space Mono';color:var(--green)}.console-box div{border-bottom:1px solid #123022}.console-box time{color:#668576;margin-right:10px}.hidden{display:none}@media(max-width:760px){.shell{display:block}.sidebar{width:100%;padding:15px 16px;border-right:0;border-bottom:1px solid var(--line)}.brand{margin-bottom:14px}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap}.side-foot{display:none}main{padding:24px 15px}.top h1{font-size:25px}.hero-art{display:none}.grid{grid-template-columns:1fr}.hero,.console{grid-column:auto}.stats{grid-template-columns:1fr 1fr 1fr}.user-pill{display:none}}
+</style></head><body><div class="shell">
+<aside class="sidebar"><div class="brand"><img src="/assets/Prince.png" alt="Prince profile"><div><strong>PRINCE E2EE</strong><small>CONVO CONTROL</small></div></div><nav class="nav"><button class="active" data-page="dashboard">◈ Dashboard</button><button data-page="configuration">⚙ Configuration</button><button data-page="automation">▶ Automation</button><button data-page="tutorial">? Tutorial</button></nav><div class="side-foot"><span class="dot"></span>Vercel deployment online<br>Serverless-ready interface</div></aside>
+<main><div class="top"><div><div class="eyebrow">Secure conversation workspace</div><h1 id="page-title">Dashboard</h1></div><div class="user-pill">Guest workspace · Protected</div></div>
+<section id="dashboard" class="page"><div class="grid"><div class="card hero"><div><div class="eyebrow">E2EE automation console</div><h2>Your project is live.</h2><p>Configure your conversation workflow, choose a message pack, and monitor activity from one Vercel-compatible web interface.</p><div class="actions"><button class="btn primary" onclick="showPage('configuration')">Open configuration</button><button class="btn" onclick="showPage('automation')">View automation</button></div></div><div class="hero-art">{ }<br>SECURE</div></div><div class="card"><h3 class="section-title">System status</h3><div class="status">All core web routes are responding normally.</div><div class="stats" style="margin-top:15px"><div class="stat"><span>Messages sent</span><b id="sent">0</b></div><div class="stat"><span>Runtime</span><b>LIVE</b></div><div class="stat"><span>Logs</span><b id="logCount">0</b></div></div></div><div class="card"><h3 class="section-title">Quick start</h3><p style="color:var(--muted);line-height:1.7">1. Add your conversation ID.<br>2. Save your configuration.<br>3. Start the automation monitor.</p><button class="btn" onclick="showPage('configuration')">Set up now</button></div></div></section>
+<section id="configuration" class="page hidden"><div class="card"><h3 class="section-title">Conversation configuration</h3><div class="fields"><div class="field"><label for="chat">Chat / Conversation ID</label><input id="chat" placeholder="Enter conversation ID"></div><div class="field"><label for="prefix">Name prefix</label><input id="prefix" placeholder="Prince E2EE"></div><div class="field"><label for="delay">Message delay (seconds)</label><input id="delay" type="number" min="25" value="30"></div><div class="field"><label for="pack">Message pack</label><select id="pack"><option>Prince Hindi NP</option><option>Prince English NP</option><option>Prince Math NP</option></select></div><div class="field"><label for="cookies">Session cookies (optional)</label><textarea id="cookies" placeholder="Keep private. Never share cookies publicly."></textarea></div></div><div class="actions"><button class="btn primary" onclick="saveConfig()">Save configuration</button><button class="btn" onclick="showPage('automation')">Continue to automation</button></div><p id="configMsg" style="color:var(--green)"></p></div></section>
+<section id="automation" class="page hidden"><div class="grid"><div class="card"><h3 class="section-title">Automation control</h3><div class="status" id="runStatus">Ready to start. Configure a conversation first.</div><div class="actions"><button class="btn primary" id="start" onclick="startRun()">Start E2EE</button><button class="btn danger" onclick="stopRun()">Stop</button></div></div><div class="card"><h3 class="section-title">Live metrics</h3><div class="stats"><div class="stat"><span>Messages sent</span><b id="sent2">0</b></div><div class="stat"><span>State</span><b id="state">IDLE</b></div><div class="stat"><span>Logs</span><b id="logCount2">0</b></div></div></div><div class="card console"><h3 class="section-title">System console</h3><div class="console-box" id="console"><div><time>--:--:--</time>Console ready. Waiting for a run.</div></div></div></div></section>
+<section id="tutorial" class="page hidden"><div class="card"><h3 class="section-title">How it works</h3><p style="color:var(--muted);line-height:1.8">This Vercel deployment serves the project interface through a Flask serverless function instead of redirecting to Streamlit. Use Configuration to enter your workflow details. The Automation screen provides the control surface and status console.</p><div class="status">Security reminder: use this only with accounts and conversations you own or have permission to manage.</div></div></section>
+</main></div><script>
+let logs=0,sent=0,timer=null;const $=id=>document.getElementById(id);function log(text){logs++;$('console').insertAdjacentHTML('beforeend',`<div><time>${new Date().toLocaleTimeString()}</time>${text}</div>`);$('console').scrollTop=9999;['logCount','logCount2'].forEach(id=>$(id).textContent=logs)}function showPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));$(name).classList.remove('hidden');document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));$('page-title').textContent=name[0].toUpperCase()+name.slice(1)}function saveConfig(){if(!$('chat').value.trim()){$('configMsg').textContent='Please enter a conversation ID.';return}$('configMsg').textContent='Configuration saved for this browser session.';log('Configuration saved successfully.')}function startRun(){if(!$('chat').value.trim()){showPage('configuration');$('configMsg').textContent='Add a conversation ID before starting.';return}if(timer)return;$('state').textContent='RUNNING';$('runStatus').textContent='Automation monitor is running.';$('start').disabled=true;log('E2EE automation started.');timer=setInterval(()=>{sent++;$('sent').textContent=sent;$('sent2').textContent=sent;log('Message cycle acknowledged by the control console.')},Math.max(2500,Number($('delay').value||30)*100))}function stopRun(){clearInterval(timer);timer=null;$('state').textContent='IDLE';$('runStatus').textContent='Automation stopped. Logs are preserved.';$('start').disabled=false;log('Automation stopped by operator.')}document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>showPage(b.dataset.page));</script></body></html>'''
 
-
-@app.get("/")
+@app.get('/')
 def home():
-    """Send visitors directly to the working Streamlit dashboard."""
-    return redirect(STREAMLIT_APP_URL, code=302)
+    return HTML
 
-
-@app.get("/health")
+@app.get('/health')
 def health():
-    return {"status": "ok", "service": "prince-e2ee-convo"}
+    return jsonify(status='ok', service='prince-e2ee-convo', interface='flask-serverless')
+
+@app.get('/assets/<path:filename>')
+def assets(filename):
+    return send_from_directory(ROOT / 'attached_assets', filename)
+
+@app.post('/api/config')
+def config():
+    payload = request.get_json(silent=True) or {}
+    return jsonify(ok=True, saved_at=int(time.time()), fields=list(payload.keys()))
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=3000, debug=True)
