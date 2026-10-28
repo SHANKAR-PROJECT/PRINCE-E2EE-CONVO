@@ -25,18 +25,23 @@ HTML = r'''<!doctype html>
 let logs=0,sent=0,timer=null;const $=id=>document.getElementById(id);function log(text){logs++;$('console').insertAdjacentHTML('beforeend',`<div><time>${new Date().toLocaleTimeString()}</time>${text}</div>`);$('console').scrollTop=9999;['logCount','logCount2'].forEach(id=>$(id).textContent=logs)}function showPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));$(name).classList.remove('hidden');document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===name));$('page-title').textContent=name[0].toUpperCase()+name.slice(1)}function saveConfig(){if(!$('chat').value.trim()){$('configMsg').textContent='Please enter a conversation ID.';return}$('configMsg').textContent='Configuration saved for this browser session.';log('Configuration saved successfully.')}function startRun(){if(!$('chat').value.trim()){showPage('configuration');$('configMsg').textContent='Add a conversation ID before starting.';return}if(timer)return;$('state').textContent='RUNNING';$('runStatus').textContent='Automation monitor is running.';$('start').disabled=true;log('E2EE automation started.');timer=setInterval(()=>{sent++;$('sent').textContent=sent;$('sent2').textContent=sent;log('Message cycle acknowledged by the control console.')},Math.max(2500,Number($('delay').value||30)*100))}function stopRun(){clearInterval(timer);timer=null;$('state').textContent='IDLE';$('runStatus').textContent='Automation stopped. Logs are preserved.';$('start').disabled=false;log('Automation stopped by operator.')}document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>showPage(b.dataset.page));</script></body></html>'''
 
 @app.get('/')
+@app.get('/api/index')
+@app.get('/api/index/')
 def home():
     return HTML
 
 @app.get('/health')
+@app.get('/api/index/health')
 def health():
     return jsonify(status='ok', service='prince-e2ee-convo', interface='flask-serverless')
 
 @app.get('/assets/<path:filename>')
+@app.get('/api/index/assets/<path:filename>')
 def assets(filename):
     return send_from_directory(ROOT / 'attached_assets', filename)
 
 @app.post('/api/config')
+@app.post('/api/index/api/config')
 def config():
     payload = request.get_json(silent=True) or {}
     return jsonify(ok=True, saved_at=int(time.time()), fields=list(payload.keys()))
