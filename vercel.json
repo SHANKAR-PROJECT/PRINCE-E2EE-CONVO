@@ -1,6 +1,8 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/api" },
-    { "source": "/assets/(.*)", "destination": "/api/assets/$1" }
+    { "source": "/", "destination": "/api/index" },
+    { "source": "/health", "destination": "/api/index/health" },
+    { "source": "/assets/(.*)", "destination": "/api/index/assets/$1" },
+    { "source": "/api/config", "destination": "/api/index/api/config" }
   ]
 }
